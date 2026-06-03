@@ -85,6 +85,24 @@ class CitaModel
         }
     }
 
+    // ====================================================================
+    // NUEVO MÉTODO: ACTUALIZAR MOTIVO DE CONSULTA
+    // ====================================================================
+    public function actualizarMotivoCita($cita_id, $motivo)
+    {
+        try {
+            $sql = "UPDATE citas SET motivo = :motivo WHERE id = :id";
+            $stmt = $this->cnx->prepare($sql);
+            return $stmt->execute([
+                ':motivo' => !empty($motivo) ? $motivo : null,
+                ':id'     => $cita_id
+            ]);
+        } catch (PDOException $e) {
+            error_log("Error en actualizarMotivoCita: " . $e->getMessage());
+            return false;
+        }
+    }
+
     //Funciones para reportes
     // Método para el reporte mensual de citas
     public function listarCitasMensualesReporte($anio, $mes)

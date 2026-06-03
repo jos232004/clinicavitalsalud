@@ -132,6 +132,23 @@ function controlador($proceso)
             echo $resultado ? 1 : 0;
             break;
 
+        // ====================================================================
+        // NUEVO PROCESO: ACTUALIZAR MOTIVO DE CONSULTA
+        // ====================================================================
+        case "ACTUALIZAR_MOTIVO":
+            $cita_id = isset($_POST['cita_id']) ? $_POST['cita_id'] : null;
+            $motivo  = isset($_POST['motivo']) ? trim($_POST['motivo']) : '';
+
+            if (empty($cita_id)) {
+                echo "Campos vacíos";
+                exit();
+            }
+
+            // Llamamos al método que crearemos en tu CitaModel.php
+            $resultado = $objCita->actualizarMotivoCita($cita_id, $motivo);
+            echo $resultado ? 1 : 0;
+            break;
+
         //Metodo para reportes
         case "REPORTAR_MES":
             if (ob_get_length()) ob_clean();

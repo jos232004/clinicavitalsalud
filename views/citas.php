@@ -135,7 +135,7 @@
                     <div class="modal-content border-warning shadow-lg">
                         <div class="modal-header bg-warning text-white">
                             <h5 class="modal-title font-weight-bold"><i class="fa fa-users"></i> Pacientes Coincidentes</h5>
-                            <button type="button" class="close" text-white" onclick="$('#modalHomonimos').modal('hide');"><span>&times;</span></button>
+                            <button type="button" class="close text-white" onclick="$('#modalHomonimos').modal('hide');"><span>&times;</span></button>
                         </div>
                         <div class="modal-body">
                             <p class="text-muted small">Se encontraron múltiples registros con ese criterio. Seleccione el correcto para evitar duplicados:</p>
@@ -156,6 +156,36 @@
                             <button type="button" class="btn btn-success btn-block" id="btnMarcarComoNuevoAbsoluto">
                                 <i class="fa fa-user-plus"></i> Ninguno coincide, registrar como NUEVO
                             </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal fade" id="editarCitaModal" tabindex="-1" role="dialog">
+                <div class="modal-dialog" role="document">
+                    <div class="modal-content border-info shadow-lg">
+                        <div class="modal-header bg-info text-white">
+                            <h5 class="modal-title font-weight-bold"><i class="fa fa-edit"></i> Gestionar Motivo de Cita</h5>
+                            <button type="button" class="close text-white" data-dismiss="modal"><span>&times;</span></button>
+                        </div>
+                        <div class="modal-body">
+                            <input type="hidden" id="editCitaId">
+                            <div class="form-group mb-2">
+                                <label class="text-muted mb-0 small">Paciente:</label>
+                                <p id="editPacienteTxt" class="form-control-plaintext font-weight-bold p-0 mb-2"></p>
+                            </div>
+                            <div class="form-group mb-3">
+                                <label class="text-muted mb-0 small">Médico / Especialidad:</label>
+                                <p id="editMedicoTxt" class="form-control-plaintext text-muted p-0 mb-0"></p>
+                            </div>
+                            <div class="form-group">
+                                <label for="editMotivoInput" class="font-weight-bold text-primary">Motivo de Consulta:</label>
+                                <textarea class="form-control" id="editMotivoInput" rows="4" placeholder="Escriba el motivo clínico de la consulta..."></textarea>
+                            </div>
+                        </div>
+                        <div class="modal-footer bg-light">
+                            <button type="button" class="btn btn-success" onclick="guardarMotivoCita()">Guardar Cambios</button>
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
                         </div>
                     </div>
                 </div>
@@ -245,8 +275,13 @@
                         if (row.estado === 'atendida' || row.estado === 'cancelada') {
                             return '<button class="btn btn-link text-muted" disabled><i class="fa fa-lock"></i> Finalizada</button>';
                         }
+
+                        // NUEVO: Convertimos el objeto de la fila a Base64 de forma segura para evitar problemas con comillas en el HTML
+                        let rowDataJson = btoa(unescape(encodeURIComponent(JSON.stringify(row))));
+
                         return `
                             <div class="form-button-action">
+                                <button type="button" class="btn btn-link btn-primary btn-lg" onclick="abrirModalEditarMotivo('${rowDataJson}')" title="Editar Motivo"><i class="fa fa-edit"></i></button>
                                 <button type="button" class="btn btn-link btn-info btn-lg btnConfirmarCita" data-id="${row.id}" title="Confirmar Cita"><i class="fa fa-check"></i></button>
                                 <button type="button" class="btn btn-link btn-success btn-lg btnAtenderCita" data-id="${row.id}" title="Marcar como Atendida"><i class="fa fa-user-md"></i></button>
                                 <button type="button" class="btn btn-link btn-danger btn-lg btnCancelarCita" data-id="${row.id}" title="Cancelar Cita"><i class="fa fa-ban"></i></button>
@@ -260,8 +295,8 @@
             }
         });
 
-        
-        // 2. Control del Modal y Carga Inicial de Especialidades
+
+        // 2. Control del Modal y Carga Inicial de Especialidades (Original intacto)
         $('#btnNuevoCita').click(function() {
             $('#formCita')[0].reset();
             $('#pacienteId').val('');
@@ -270,11 +305,9 @@
             setCamposPacienteReadOnly(true);
             ajustarReglasDocumento();
 
-            // Limpiamos los selects anidados y deshabilitamos el de médicos
             $('#selectEspecialidad').html('<option value="">Cargando especialidades...</option>');
             $('#selectMedico').html('<option value="">-- Primero elija una especialidad --</option>').prop('disabled', true);
 
-            // LLAMADA AJAX DINÁMICA A TU NUEVO CONTROLADOR DE ESPECIALIDADES
             $.post("controllers/contEspecialidad.php", {
                 proceso: "LISTAR"
             }, function(response) {
@@ -284,7 +317,6 @@
 
                     if (especialidades.length > 0) {
                         especialidades.forEach(esp => {
-                            // Usamos esp.id y esp.nombre basándonos en la estructura común de tu EspecialidadModel
                             $('#selectEspecialidad').append(`<option value="${esp.id}">${esp.nombre}</option>`);
                         });
                     } else {
@@ -297,9 +329,7 @@
             });
         });
 
-        // ====================================================================
-        // NUEVO DETECTOR: LÓGICA DE SELECTS ANIDADOS (EVENTO CHANGE)
-        // ====================================================================
+        // Lógica de Selects Anidados (Original intacto)
         $('#selectEspecialidad').change(function() {
             let espId = $(this).val();
             let selectMed = $('#selectMedico');
@@ -311,7 +341,6 @@
 
             selectMed.html('<option value="">Cargando médicos activos...</option>').prop('disabled', true);
 
-            // Llamada AJAX al controlador que acabamos de actualizar con el nuevo caso
             $.ajax({
                 url: "controllers/contMedico.php",
                 type: "POST",
@@ -369,7 +398,7 @@
 
         $('#selectTipoDoc').change(ajustarReglasDocumento);
 
-        // 3. Motor de Búsqueda y Manejo de Homónimos
+        // 3. Motor de Búsqueda y Manejo de Homónimos (Original intacto)
         function buscarPaciente() {
             let tipo = $('#selectTipoDoc').val();
             let dni = $('#pacienteDni').val().trim();
@@ -471,7 +500,7 @@
             }
         });
 
-        // 4. Guardar Cita Completa
+        // 4. Guardar Cita Completa (Original intacto)
         $('#btnGuardarCita').click(function() {
             let paciente_id = $('#pacienteId').val();
             let medico_id = $('#selectMedico').val();
@@ -510,7 +539,7 @@
             });
         });
 
-        // 5. Cambios de Estado
+        // 5. Cambios de Estado (Original intacto)
         $('#tablaCitas').on('click', '.btnConfirmarCita', function() {
             let id = $(this).data('id');
             if (confirm("¿Está seguro de marcar esta cita como CONFIRMADA?")) {
@@ -555,6 +584,51 @@
                 });
             }
         });
+
+        // NUEVO 6: FUNCIONES GLOBALES PARA EL CONTROL DE MOTIVO DE CONSULTA
+        window.abrirModalEditarMotivo = function(base64Data) {
+            // Decodificamos el JSON de la fila de forma segura
+            let row = JSON.parse(decodeURIComponent(escape(atob(base64Data))));
+
+            $('#editCitaId').val(row.id);
+            $('#editPacienteTxt').html(`<i class="fa fa-user"></i> ${row.title} <span class="text-muted font-weight-normal">(DNI: ${row.paciente_dni || 'N/E'})</span>`);
+            $('#editMedicoTxt').html(`<i class="fa fa-user-md"></i> Dr(a). ${row.medico} <br><i class="fa fa-stethoscope"></i> ${row.especialidad}`);
+            $('#editMotivoInput').val(row.motivo || ''); // Si no tiene motivo, limpia el campo
+
+            $('#editarCitaModal').modal('show');
+        }
+
+        window.guardarMotivoCita = function() {
+            let id = $('#editCitaId').val();
+            let motivoTxt = $('#editMotivoInput').val().trim();
+
+            if (!id) {
+                alert("Error: No se pudo capturar el ID de la cita.");
+                return;
+            }
+
+            $.ajax({
+                url: "controllers/contCita.php",
+                type: "POST",
+                data: {
+                    proceso: "ACTUALIZAR_MOTIVO",
+                    cita_id: id,
+                    motivo: motivoTxt
+                },
+                success: function(response) {
+                    if (response.trim() == "1") {
+                        alert("El motivo de consulta se actualizó correctamente.");
+                        $('#editarCitaModal').modal('hide');
+                        tablaCitas.ajax.reload(null, false); // Recarga DataTable sin perder paginación
+                    } else {
+                        alert("Atención: No se realizaron cambios o el registro no varió.");
+                    }
+                },
+                error: function() {
+                    alert("Error crítico: No se pudo establecer conexión con contCita.php");
+                }
+            });
+        }
 
     });
 </script>
