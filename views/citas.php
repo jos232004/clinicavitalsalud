@@ -110,7 +110,9 @@
                                     <div class="col-md-6">
                                         <div class="form-group">
                                             <label for="horaCita">Hora</label>
-                                            <input type="time" id="horaCita" class="form-control" required>
+                                            <select id="horaCita" class="form-control" required>
+                                                <option value="">-- Seleccione hora --</option>
+                                            </select>
                                         </div>
                                     </div>
                                     <div class="col-md-12">
@@ -213,6 +215,43 @@
 
 <script>
     $(document).ready(function() {
+
+        // NUEVO: Función para rellenar el select de horas en formato 12h (AM/PM)
+        function cargarIntervalosHorarios() {
+            let selectHora = $('#horaCita');
+            selectHora.html('<option value="">-- Seleccione hora --</option>');
+
+            // Configura el rango clínico: 8 AM (8) hasta las 8 PM (20)
+            let horaInicio = 6;
+            let horaFin = 20;
+            let intervaloMinutos = 15; // Puedes cambiarlo a 15, 30 o 45 minutos si lo requieres
+
+            for (let h = horaInicio; h <= horaFin; h++) {
+                for (let m = 0; m < 60; m += intervaloMinutos) {
+                    // Evitar pasarse de la hora fin exacta
+                    if (h === horaFin && m > 0) break;
+
+                    // Formatear valores internos en 24h (HH:mm) para que PHP lo reciba igual
+                    let hh = h < 10 ? '0' + h : h;
+                    let mm = m < 10 ? '0' + m : m;
+                    let valor24h = `${hh}:${mm}`;
+
+                    // Convertir visualmente a formato 12h (AM/PM)
+                    let ampm = h >= 12 ? 'PM' : 'AM';
+                    let h12 = h % 12;
+                    h12 = h12 === 0 ? 12 : h12; // El mediodía o medianoche
+                    let h12Txt = h12 < 10 ? '0' + h12 : h12;
+
+                    let textoVisual = `${h12Txt}:${mm} ${ampm}`;
+
+                    // Insertar opción al select
+                    selectHora.append(`<option value="${valor24h}">${textoVisual}</option>`);
+                }
+            }
+        }
+
+        // Ejecutar la función de llenado al cargar la página
+        cargarIntervalosHorarios();
 
         // 1. Inicializar DataTable Principal
         let tablaCitas = $('#tablaCitas').DataTable({
