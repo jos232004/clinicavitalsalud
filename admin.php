@@ -266,7 +266,7 @@ if (!isset($_SESSION['idusuario'])) {
 						</ul>
 					</nav>
 					<div class="copyright ml-auto">
-						2026, Vital Salud
+						Sistema desarrollado por DCG BIOMEDIC - 2026, Vital Salud
 					</div>
 				</div>
 			</footer>

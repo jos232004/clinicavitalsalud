@@ -267,12 +267,33 @@
             ],
             "columns": [{
                     "data": null,
-                    "render": function(data, type, row) {
-                        if (row.start) {
-                            let partes = row.start.split('T');
-                            return `<strong>${partes[0]}</strong> <br> <small class="text-muted">${partes[1] || ''}</small>`;
-                        }
-                        return '';
+                    "render": function(data, type, row) { //Cambiamos el diseños de las horas, debes ver lo de reniec, aunque funciona debes probar con el internet de la casa. crear mas consultas.
+
+                        if (!row.start) return '';
+
+                        let fechaHora = new Date(row.start);
+
+                        let fecha = fechaHora.toLocaleDateString('es-PE');
+
+                        let hora = fechaHora.toLocaleTimeString('en-US', {
+                            hour: 'numeric',
+                            minute: '2-digit',
+                            hour12: true
+                        });
+
+                        return `
+            <div>
+                <div class="font-weight-bold">
+                    <i class="fa fa-calendar text-primary"></i>
+                    ${fecha}
+                </div>
+
+                <div class="font-weight-bold">
+                    <i class="fa fa-clock"></i>
+                    ${hora}
+                </div>
+            </div>
+        `;
                     }
                 },
                 {
@@ -445,49 +466,151 @@
             if (tipo === "DNI" && !/^[0-9]{8}$/.test(dni)) {
                 return;
             }
+
             if (dni === "") {
                 return;
             }
+
+            // Cambiar visualmente el estado a "Buscando..."
+            $('#statusPaciente')
+                .html('<i class="fas fa-spinner fa-spin"></i> Verificando base de datos interna...')
+                .attr('class', 'form-text text-muted');
 
             $.post("controllers/contPaciente.php", {
                 proceso: "BUSCAR_DNI",
                 dni: dni
             }, function(resultado) {
+
                 if (resultado == "0") {
-                    inyectarPacienteNuevoDirecto();
+
+                    // Si no está registrado en la clínica y es DNI, consultar RENIEC
+                    if (tipo === "DNI") {
+
+                        $('#statusPaciente')
+                            .html('<i class="fas fa-search-plus"></i> No registrado localmente. Consultando a RENIEC...')
+                            .attr('class', 'form-text text-info');
+
+                        $.post("controllers/contReniec.php", {
+                            dni: dni
+                        }, function(reniecRes) {
+
+                            try {
+                                let datosReniec = JSON.parse(reniecRes);
+
+                                // [CORREGIDO]: Verificamos que 'success' sea true y que exista el objeto interno 'datos'
+                                if (datosReniec && datosReniec.success === true && datosReniec.datos) {
+
+                                    // Creamos un acceso directo al sub-objeto para no escribir tanto
+                                    let infoPersona = datosReniec.datos;
+
+                                    $('#pacienteId').val('NUEVO');
+
+                                    // [CORREGIDO]: Mapeamos las llaves exactas con guion bajo que se ven en tu panel
+                                    let apePaterno = infoPersona.ape_paterno || '';
+                                    let apeMaterno = infoPersona.ape_materno || '';
+                                    let apellidosCompletos = `${apePaterno} ${apeMaterno}`.trim();
+
+                                    // Asignamos los campos oficiales
+                                    $('#pacienteNombres').val(infoPersona.nombres || '');
+                                    $('#pacienteApellidos').val(apellidosCompletos);
+
+                                    // Si la API no da fecha de nacimiento en este plan, lo dejamos en blanco para admisión
+                                    $('#pacienteFechaNac').val('');
+                                    $('#pacienteTelefono').val('');
+
+                                    // Bloqueamos nombres y apellidos para mantener la fidelidad de RENIEC
+                                    setCamposPacienteReadOnly(true);
+
+                                    // Dejar activos solo los que el operador debe completar
+                                    $('#pacienteFechaNac').removeAttr('readonly');
+                                    $('#pacienteTelefono').removeAttr('readonly');
+
+                                    $('#btnGuardarCita').removeAttr('disabled');
+                                    $('#statusPaciente').html('<i class="fa fa-check-circle"></i> Datos oficiales de RENIEC cargados.').attr('class', 'form-text text-success font-weight-bold');
+
+                                } else {
+                                    // Si la API responde success: false o no trae el objeto 'datos'
+                                    console.warn("RENIEC no encontró el documento o token inválido:", datosReniec);
+                                    inyectarPacienteNuevoDirecto();
+                                }
+                            } catch (e) {
+                                console.error("Error al parsear respuesta de RENIEC:", e);
+                                inyectarPacienteNuevoDirecto();
+                            }
+                        }).fail(function() {
+                            console.error("Error crítico de comunicación con contReniec.php");
+                            inyectarPacienteNuevoDirecto();
+                        });
+
+                    } else {
+
+                        // Pasaporte u otro documento
+                        inyectarPacienteNuevoDirecto();
+
+                    }
+
                 } else {
+
+                    // Paciente encontrado en la base de datos
                     let datos = JSON.parse(resultado);
 
                     if (!Array.isArray(datos)) {
+
                         cargarPacienteFormularioPrincipal(datos);
+
                     } else {
+
                         if (datos.length === 1) {
+
                             cargarPacienteFormularioPrincipal(datos[0]);
+
                         } else {
+
                             $('#listaHomonimosBody').empty();
+
                             datos.forEach(p => {
+
                                 let fecha_txt = p.fecha_nac ? p.fecha_nac : 'No registrada';
+
                                 $('#listaHomonimosBody').append(`
-                                    <tr>
-                                        <td class="align-middle text-center font-weight-bold text-primary small">${p.dni}</td>
-                                        <td>
-                                            <strong>${p.apellidos}, ${p.nombres}</strong><br>
-                                            <small class="text-muted"><i class="fa fa-birthday-cake"></i> ${fecha_txt} | <i class="fa fa-phone"></i> ${p.telefono || 'S/T'}</small>
-                                        </td>
-                                        <td class="text-center align-middle">
-                                            <button type="button" class="btn btn-xs btn-primary btnSeleccionarHomonimo" 
-                                                data-id="${p.id}" data-dni="${p.dni}" data-nombres="${p.nombres}" 
-                                                data-apellidos="${p.apellidos}" data-fecha="${p.fecha_nac}" data-telefono="${p.telefono}">
-                                                <i class="fa fa-user-check"></i> Es él
-                                            </button>
-                                        </td>
-                                    </tr>
-                                `);
+                            <tr>
+                                <td class="align-middle text-center font-weight-bold text-primary small">
+                                    ${p.dni}
+                                </td>
+                                <td>
+                                    <strong>${p.apellidos}, ${p.nombres}</strong><br>
+                                    <small class="text-muted">
+                                        <i class="fa fa-birthday-cake"></i> ${fecha_txt}
+                                        |
+                                        <i class="fa fa-phone"></i> ${p.telefono || 'S/T'}
+                                    </small>
+                                </td>
+                                <td class="text-center align-middle">
+                                    <button
+                                        type="button"
+                                        class="btn btn-xs btn-primary btnSeleccionarHomonimo"
+                                        data-id="${p.id}"
+                                        data-dni="${p.dni}"
+                                        data-nombres="${p.nombres}"
+                                        data-apellidos="${p.apellidos}"
+                                        data-fecha="${p.fecha_nac}"
+                                        data-telefono="${p.telefono}">
+                                        <i class="fa fa-user-check"></i> Es él
+                                    </button>
+                                </td>
+                            </tr>
+                        `);
+
                             });
+
                             $('#modalHomonimos').modal('show');
+
                         }
+
                     }
+
                 }
+
             });
         }
 
