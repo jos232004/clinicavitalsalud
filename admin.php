@@ -269,7 +269,6 @@ $rol_actual = isset($_SESSION['rol']) ? $_SESSION['rol'] : 'admision';
 			</footer>
 		</div>
 	</div>
-
 	<script src="assets/js/core/jquery.3.2.1.min.js"></script>
 	<script src="assets/js/core/popper.min.js"></script>
 	<script src="assets/js/core/bootstrap.min.js"></script>
