@@ -8,7 +8,7 @@ class Conexion
         $manejador = "mysql";
         $servidor = "localhost";
         $usuario = "root";
-        $pass = "";//Configurar la base de datos con la contraseña de su servidor local
+        $pass = "";//Configurar la base de datos con la contraseña de su servidor local //vitalsalud26 de la clinica
         $base = "vital_salud";
         $cadena = "$manejador:host=$servidor;dbname=$base";
 

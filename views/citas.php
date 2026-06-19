@@ -498,35 +498,36 @@
                                 let datosReniec = JSON.parse(reniecRes);
 
                                 // [CORREGIDO]: Verificamos que 'success' sea true y que exista el objeto interno 'datos'
-                                if (datosReniec && datosReniec.success === true && datosReniec.datos) {
+                                if (datosReniec && datosReniec.success === true && datosReniec.data) {
 
-                                    // Creamos un acceso directo al sub-objeto para no escribir tanto
-                                    let infoPersona = datosReniec.datos;
+                                    let infoPersona = datosReniec.data;
 
                                     $('#pacienteId').val('NUEVO');
 
-                                    // [CORREGIDO]: Mapeamos las llaves exactas con guion bajo que se ven en tu panel
-                                    let apePaterno = infoPersona.ape_paterno || '';
-                                    let apeMaterno = infoPersona.ape_materno || '';
+                                    let apePaterno = infoPersona.apellido_paterno || '';
+                                    let apeMaterno = infoPersona.apellido_materno || '';
+
                                     let apellidosCompletos = `${apePaterno} ${apeMaterno}`.trim();
 
-                                    // Asignamos los campos oficiales
                                     $('#pacienteNombres').val(infoPersona.nombres || '');
                                     $('#pacienteApellidos').val(apellidosCompletos);
 
-                                    // Si la API no da fecha de nacimiento en este plan, lo dejamos en blanco para admisión
+                                    // Factiliza no devuelve fecha de nacimiento en tu plan
                                     $('#pacienteFechaNac').val('');
+
                                     $('#pacienteTelefono').val('');
 
-                                    // Bloqueamos nombres y apellidos para mantener la fidelidad de RENIEC
                                     setCamposPacienteReadOnly(true);
 
-                                    // Dejar activos solo los que el operador debe completar
+                                    // Dejamos que admisión complete estos campos
                                     $('#pacienteFechaNac').removeAttr('readonly');
                                     $('#pacienteTelefono').removeAttr('readonly');
 
                                     $('#btnGuardarCita').removeAttr('disabled');
-                                    $('#statusPaciente').html('<i class="fa fa-check-circle"></i> Datos oficiales de RENIEC cargados.').attr('class', 'form-text text-success font-weight-bold');
+
+                                    $('#statusPaciente')
+                                        .html('<i class="fa fa-check-circle"></i> Datos obtenidos desde RENIEC.')
+                                        .attr('class', 'form-text text-success font-weight-bold');
 
                                 } else {
                                     // Si la API responde success: false o no trae el objeto 'datos'

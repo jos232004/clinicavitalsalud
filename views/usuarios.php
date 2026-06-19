@@ -10,7 +10,6 @@
 			</button>
 		</div>
 		<div class="card-body">
-			<!-- Modal -->
 			<div class="modal fade" id="addUsuarioModal" tabindex="-1" role="dialog">
 				<div class="modal-dialog" role="document">
 					<div class="modal-content">
@@ -41,6 +40,7 @@
 									<select id="rol" class="form-control">
 										<option value="admin">Admin</option>
 										<option value="admision">Admisión</option>
+										<option value="medico">Médico</option>
 									</select>
 								</div>
 							</form>
@@ -52,7 +52,7 @@
 					</div>
 				</div>
 			</div>
-			<!-- Modal Editar -->
+
 			<div class="modal fade" id="editUsuarioModal" tabindex="-1" role="dialog">
 				<div class="modal-dialog" role="document">
 					<div class="modal-content">
@@ -80,6 +80,7 @@
 									<select id="editRol" class="form-control">
 										<option value="admin">Admin</option>
 										<option value="admision">Admisión</option>
+										<option value="medico">Médico</option>
 									</select>
 								</div>
 								<div class="form-group">
@@ -99,7 +100,6 @@
 				</div>
 			</div>
 
-			<!-- Tabla -->
 			<div class="table-responsive">
 				<table id="tablaUsuarios" class="display table table-striped table-hover">
 					<thead>
@@ -118,13 +118,13 @@
 		</div>
 	</div>
 </div>
+
 <script>
-	//Script para funcionalidades CRUD
 	$(document).ready(function() {
 		// Inicializar DataTable con AJAX para listar usuarios
 		let tabla = $('#tablaUsuarios').DataTable({
 			"ajax": {
-				"url": "controllers/contUsuario.php",
+				"url": "controllers/contUsuario.php",//Demos permitir registrar un usuario con el rol de medico 
 				"type": "POST",
 				"data": {
 					"proceso": "LISTAR"
@@ -141,23 +141,31 @@
 					"data": "email"
 				},
 				{
-					"data": "rol"
+					"data": "rol",
+					"render": function(data) {
+						// Formateo visual estético para la columna Rol
+						if (data === 'admin') return '<span class="badge badge-secondary">Admin</span>';
+						if (data === 'admision') return '<span class="badge badge-info">Admisión</span>';
+						if (data === 'medico') return '<span class="badge badge-primary">Médico</span>';
+						return data;
+					}
 				},
 				{
 					"data": "activo",
 					"render": function(data) {
-						return data == 1 ? "Activo" : "Inactivo";
+						// Badges oficiales de Atlantis para activos/inactivos
+						return data == 1 ? '<span class="badge badge-success">Activo</span>' : '<span class="badge badge-danger">Inactivo</span>';
 					}
 				},
 				{
 					"data": "id",
 					"render": function(data, type, row) {
-						return `<button class="btn btn-primary btn-sm editar" data-id="${data}" data-nombre="${row.nombre}" data-apellido="${row.apellido}" data-email="${row.email}" 
-              								data-rol="${row.rol}" 
-              								data-activo="${row.activo}">
-        									<i class="fa fa-edit"></i>
-      										</button>
-							<button class="btn btn-danger btn-sm eliminar" data-id="${data}"><i class="fa fa-times"></i></button>`;
+						return `<button class="btn btn-primary btn-sm editar mr-1" data-id="${data}" data-nombre="${row.nombre}" data-apellido="${row.apellido}" data-email="${row.email}" 
+                                            data-rol="${row.rol}" 
+                                            data-activo="${row.activo}">
+                                    <i class="fa fa-edit"></i>
+                                </button>
+                                <button class="btn btn-danger btn-sm eliminar" data-id="${data}"><i class="fa fa-times"></i></button>`;
 					}
 				},
 			],
@@ -166,7 +174,7 @@
 			}
 		});
 
-		//Agregar usuario
+		// Agregar usuario
 		$('#btnGuardarUsuario').click(function() {
 			let nombre = $('#nombre').val().trim();
 			let apellido = $('#apellido').val().trim();
@@ -174,7 +182,6 @@
 			let clave = $('#clave').val().trim();
 			let rol = $('#rol').val();
 
-			// Validaciones básicas
 			if (!nombre || !apellido || !email || !clave) {
 				alert("Todos los campos son obligatorios");
 				return;
@@ -188,7 +195,6 @@
 				return;
 			}
 
-			// Si pasa validación, enviamos al controlador
 			$.post("controllers/contUsuario.php", {
 				proceso: "REGISTRAR",
 				nombre: nombre,
@@ -200,10 +206,10 @@
 				if (resultado == "1") {
 					alert("Usuario registrado correctamente");
 					$('#addUsuarioModal').modal('hide');
-					$('#formUsuario')[0].reset(); // Limpia los campos del formulario al cerrar
+					$('#formUsuario')[0].reset();
 					tabla.ajax.reload();
 				} else if (resultado == "Email duplicado") {
-					alert("El email que usted igresó ya está registrado");
+					alert("El email que usted ingresó ya está registrado");
 				} else if (resultado == "Email inválido") {
 					alert("Formato de email incorrecto");
 				} else if (resultado == "Campos vacíos") {
@@ -213,7 +219,6 @@
 				}
 			});
 		});
-
 
 		// Abrir modal con datos a editar
 		$('#tablaUsuarios').on('click', '.editar', function() {
@@ -235,7 +240,6 @@
 			let rol = $('#editRol').val();
 			let activo = $('#editActivo').val();
 
-			// Validaciones básicas
 			if (!nombre || !apellido || !email) {
 				alert("Nombre, apellido y email son obligatorios");
 				return;
@@ -245,7 +249,6 @@
 				return;
 			}
 
-			// Enviar al controlador si pasa validación
 			$.post("controllers/contUsuario.php", {
 				proceso: "EDITAR",
 				id: id,
@@ -271,8 +274,7 @@
 			});
 		});
 
-
-		//Eliminar usuario
+		// Eliminar usuario
 		$('#tablaUsuarios').on('click', '.eliminar', function() {
 			let id = $(this).data('id');
 			if (confirm("¿Eliminar usuario?")) {

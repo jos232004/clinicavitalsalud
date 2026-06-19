@@ -72,7 +72,6 @@ session_destroy();
     <script src="dist/js/adminlte.min.js"></script>
 
     <script>
-        
         function IngresarSistema() {
             let email = $('#email').val().trim().toLowerCase();
             let clave = $('#clave').val();
@@ -88,7 +87,7 @@ session_destroy();
                 alert('Ingresa un email válido, por ejemplo admin@vitalsalud.pe');
                 return;
             }
-
+            
             if (email !== 'admin@vitalsalud.pe') {
                 let confirmacion = confirm('El email ingresado es diferente a admin@vitalsalud.pe. ¿Deseas continuar?');
                 if (!confirmacion) {
