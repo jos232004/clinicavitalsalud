@@ -13,10 +13,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['dni'])) {
     }
 
     // TOKEN FACTILIZA
-    $token = '';
+    $token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI0MTE3MyIsImh0dHA6Ly9zY2hlbWFzLm1pY3Jvc29mdC5jb20vd3MvMjAwOC8wNi9pZGVudGl0eS9jbGFpbXMvcm9sZSI6ImNvbnN1bHRvciJ9.y48bChIfaBh373sG0zoO46-c6H4EMb1nCoVBwiLLmVg';
 
     // ENDPOINT FACTILIZA
-    $url = "" . $dni; 
+    $url = "https://api.factiliza.com/v1/dni/info/" . $dni; 
 
     $ch = curl_init();
 
